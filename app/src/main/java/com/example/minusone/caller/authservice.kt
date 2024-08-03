@@ -11,25 +11,35 @@ import kotlinx.coroutines.launch
 import java.net.HttpURLConnection
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
+import com.google.gson.Gson
+
+data class TokenUser (
+    val id: String,
+    val email: String,
+    val name: String
+)
+
+data class TokenResponse (
+    val token: String,
+    val refreshToken: String,
+    val user: TokenUser
+)
 
 class Authservice: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
     private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
 
-    fun login(context: Context, email: String, password: String): String? {
+    fun login(context: Context, email: String, password: String) {
         val body = mutableMapOf<String,String>()
         body["email"] = email
         body["password"] = password
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val loginRequest = async { post(path = "/login", body = body) }
-                val loginResp = loginRequest.await()
-                if(loginResp == null) {
-                    println("something went wrong")
-                }
-
-                if(loginResp?.get("statusCode") == HttpURLConnection.HTTP_OK) {
-                    val response = loginResp["response"]
-//                    val token = response["token"]
+                val (statusCode, data) = loginRequest.await()
+                if(statusCode == HttpURLConnection.HTTP_OK) {
+                    val gson = Gson()
+                    val tokenResponse = gson.fromJson(data, TokenResponse::class.java)
+                    storeToken(context, tokenResponse.token)
                 }
 
             } catch (e: Exception) {
