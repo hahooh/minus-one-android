@@ -25,7 +25,7 @@ data class TokenResponse (
     val user: TokenUser
 )
 
-class Authservice: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
+class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
     private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
 
     fun login(context: Context, email: String, password: String) {
@@ -82,4 +82,9 @@ class Authservice: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
 
         return sharedPreferences.getString("login_token", null)
     }
+}
+
+private val authService = AuthService()
+fun getAuthService(): AuthService {
+    return authService
 }

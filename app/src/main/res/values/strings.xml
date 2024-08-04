@@ -4,4 +4,8 @@
     <string name="email_placeholder">my@email.com</string>
     <string name="email">Email</string>
     <string name="login">Login</string>
+    <string name="minus">Minus</string>
+    <string name="auth_app_name_middle">-</string>
+    <string name="one">One</string>
+    <string name="name">Name</string>
 </resources>
