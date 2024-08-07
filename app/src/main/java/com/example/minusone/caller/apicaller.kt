@@ -51,9 +51,15 @@ open class Apicaller (private val apiBaseUrl: String) {
                     it.write(mapToJsonString(body))
                 }
 
+                val inputStream = if (connection.responseCode in 200..299) {
+                    connection.inputStream
+                } else {
+                    connection.errorStream
+                }
+
                 Pair(
                     connection.responseCode,
-                    inputStreamToString(connection.inputStream)
+                    inputStreamToString(inputStream)
                 )
             } catch (e: Exception) {
                 Log.e("API Caller POST", "Error from api caller: $e")

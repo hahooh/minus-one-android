@@ -36,16 +36,42 @@ class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
             try {
                 val loginRequest = async { post(path = "/login", body = body) }
                 val (statusCode, data) = loginRequest.await()
-                if(statusCode == HttpURLConnection.HTTP_OK) {
-                    val gson = Gson()
-                    val tokenResponse = gson.fromJson(data, TokenResponse::class.java)
-                    storeToken(context, tokenResponse.token)
+                when(statusCode) {
+                    HttpURLConnection.HTTP_OK -> handleTokenResponse(context, data)
                 }
-
             } catch (e: Exception) {
                 Log.e("Login error", e.toString())
             }
         }
+    }
+
+    fun register(context: Context, email: String, password: String, name: String) {
+        val body = mutableMapOf<String,String>()
+        body["email"] = email
+        body["password"] = password
+        body["name"] = name
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val registerRequest = async { post(path = "/register", body = body ) }
+                val (statusCode, data) = registerRequest.await()
+                Log.i("status code", statusCode.toString())
+                Log.i("data", data)
+                when(statusCode) {
+                    HttpURLConnection.HTTP_OK -> handleTokenResponse(context, data)
+                    else -> {
+                        Log.i("I have data here",data)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Register error", e.toString())
+            }
+        }
+    }
+
+    private fun handleTokenResponse(context: Context, data: String) {
+        val gson = Gson()
+        val tokenResponse = gson.fromJson(data, TokenResponse::class.java)
+        storeToken(context, tokenResponse.token)
     }
 
     private fun storeToken(context: Context, token: String) {

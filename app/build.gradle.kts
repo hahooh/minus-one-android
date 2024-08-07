@@ -29,11 +29,11 @@ android {
                 "proguard-rules.pro"
             )
 
-            buildConfigField("String", "API_URL", "https://10.0.2.2:8080")
+            buildConfigField("String", "API_URL", "https://10.0.2.2:5000")
         }
 
         debug {
-            buildConfigField("String", "API_URL", "\"http://10.0.2.2:8080/v1\"")
+            buildConfigField("String", "API_URL", "\"http://10.0.2.2:5000/v1\"")
         }
     }
     compileOptions {
