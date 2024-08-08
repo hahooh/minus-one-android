@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.example.minusone.caller.getAuthService
@@ -37,7 +38,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun login(email: String, password: String) {
-        getAuthService().login(context = applicationContext, email, password)
+        getAuthService().login(context = applicationContext, email, password) { msg ->
+            when(msg) {
+                null, "" -> {
+                    val intent = Intent(this, DashboardActivity::class.java)
+                    startActivity(intent)
+                }
+                else -> {
+                    val errMsg = findViewById<TextView>(R.id.errorMessage)
+                    errMsg.text = when(msg) {
+                        "record not found" -> "Email not found"
+                        "unauthorized" -> "Wrong password"
+                        else -> msg
+                    }
+                    errMsg.visibility = TextView.VISIBLE
+                }
+            }
+        }
     }
 
     private fun isUserLoggedIn(): Boolean {

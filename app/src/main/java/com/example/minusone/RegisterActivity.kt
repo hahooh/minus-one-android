@@ -2,7 +2,6 @@ package com.example.minusone
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -37,7 +36,6 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun register(email: String, password: String, name: String) {
         getAuthService().register(applicationContext, email, password, name) { msg ->
-            Log.i("this is message", msg.toString())
             when(msg) {
                 null, "" -> {
                     val intent = Intent(this, DashboardActivity::class.java)

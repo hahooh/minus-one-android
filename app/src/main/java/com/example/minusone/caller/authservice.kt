@@ -1,18 +1,15 @@
 package com.example.minusone.caller
 
 import android.content.Context
-import android.util.Log
 import androidx.security.crypto.MasterKey
 import com.example.minusone.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import java.net.HttpURLConnection
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import com.google.gson.Gson
-import java.net.SocketTimeoutException
 
 data class TokenUser (
     val id: String,
@@ -35,7 +32,7 @@ data class ErrorResponse (
 class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
     private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
 
-    fun login(context: Context, email: String, password: String) {
+    fun login(context: Context, email: String, password: String, errorHandler: (String?) -> Unit) {
         val body = mutableMapOf<String,String>()
         body["email"] = email
         body["password"] = password
@@ -43,11 +40,17 @@ class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
             try {
                 val loginRequest = async { post(path = "/login", body = body) }
                 val (statusCode, data) = loginRequest.await()
-                when(statusCode) {
-                    HttpURLConnection.HTTP_OK -> handleTokenResponse(context, data)
+                val respMessage = when(statusCode) {
+                    in 200..299 -> {
+                        handleTokenResponse(context, data)
+                        null
+                    }
+                    in 400..499 -> handleErrorResponse(data)
+                    else -> "Something went wrong"
                 }
+                errorHandler(respMessage)
             } catch (e: Exception) {
-                Log.e("Login error", e.toString())
+                errorHandler("Something went wrong")
             }
         }
     }
@@ -67,15 +70,11 @@ class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
                         null
                     }
                     in 400..499 -> handleErrorResponse(data)
-                    else -> {
-                        Log.i("I have data here",data)
-                        "Something went wrong"
-                    }
+                    else -> "Something went wrong"
                 }
                 errorHandler(respMessage)
             } catch (e: Exception) {
-                Log.e("Register error", e.toString())
-                errorHandler("Something went wrong...")
+                errorHandler("Something went wrong")
             }
         }
     }

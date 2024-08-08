@@ -80,6 +80,14 @@
             android:inputType="textPassword"
             tools:ignore="LabelFor" />
 
+        <TextView
+            android:id="@+id/errorMessage"
+            android:layout_width="295dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15sp"
+            android:textColor="#FF3131"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/loginButton"
             android:layout_width="300dp"
