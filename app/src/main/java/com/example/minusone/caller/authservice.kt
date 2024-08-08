@@ -12,6 +12,7 @@ import java.net.HttpURLConnection
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import com.google.gson.Gson
+import java.net.SocketTimeoutException
 
 data class TokenUser (
     val id: String,
@@ -23,6 +24,12 @@ data class TokenResponse (
     val token: String,
     val refreshToken: String,
     val user: TokenUser
+)
+
+data class ErrorResponse (
+    val message: String,
+    val status: UShort,
+    val data: Any
 )
 
 class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
@@ -45,7 +52,7 @@ class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
         }
     }
 
-    fun register(context: Context, email: String, password: String, name: String) {
+    fun register(context: Context, email: String, password: String, name: String, errorHandler: (String?) -> Unit)  {
         val body = mutableMapOf<String,String>()
         body["email"] = email
         body["password"] = password
@@ -54,18 +61,29 @@ class AuthService: Apicaller(apiBaseUrl = BuildConfig.API_URL) {
             try {
                 val registerRequest = async { post(path = "/register", body = body ) }
                 val (statusCode, data) = registerRequest.await()
-                Log.i("status code", statusCode.toString())
-                Log.i("data", data)
-                when(statusCode) {
-                    HttpURLConnection.HTTP_OK -> handleTokenResponse(context, data)
+                val respMessage = when(statusCode) {
+                    in 200..299 -> {
+                        handleTokenResponse(context, data)
+                        null
+                    }
+                    in 400..499 -> handleErrorResponse(data)
                     else -> {
                         Log.i("I have data here",data)
+                        "Something went wrong"
                     }
                 }
+                errorHandler(respMessage)
             } catch (e: Exception) {
                 Log.e("Register error", e.toString())
+                errorHandler("Something went wrong...")
             }
         }
+    }
+
+    private fun handleErrorResponse(data: String): String {
+        val gson = Gson()
+        val errorResp = gson.fromJson(data, ErrorResponse::class.java)
+        return errorResp.message
     }
 
     private fun handleTokenResponse(context: Context, data: String) {

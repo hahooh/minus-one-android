@@ -30,6 +30,11 @@
             android:name=".RegisterActivity"
             android:exported="true"
             android:launchMode="singleInstance" />
+
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="true"
+            android:launchMode="singleInstance" />
     </application>
 
 </manifest>
