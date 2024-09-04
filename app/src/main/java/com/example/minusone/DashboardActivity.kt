@@ -6,6 +6,8 @@ import android.provider.Settings
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.minusone.sampledata.UsageStatsService
 
 class DashboardActivity: AppCompatActivity() {
@@ -25,10 +27,10 @@ class DashboardActivity: AppCompatActivity() {
             return
         }
 
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
         val usageApplications = usageStatsService.getUsageStats()
-        for (usageApplication in usageApplications) {
-            Log.i("Usage Application", usageApplication.packageName)
-            Log.i("Usage Application", usageApplication.usageInSeconds.toString())
-        }
+        val adapter = IconAdapter(usageApplications)
+        recyclerView.adapter = adapter
     }
 }

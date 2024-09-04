@@ -5,15 +5,37 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.util.Log
 import java.util.Calendar
 
 data class UsageApplication (
     val packageName: String,
     val icon: Drawable,
+    val appName: String,
     val usageInSeconds: Long
 )
 
 class UsageStatsService(private val context: Context) {
+    private val socialMediaPackageNames = mapOf(
+        "YouTube" to "com.google.android.youtube",
+        "TikTok" to "com.zhiliaoapp.musically",
+        "Facebook" to "com.facebook.katana",
+        "Reddit" to "com.reddit.frontpage",
+        "Instagram" to "com.instagram.android",
+        "Twitter (X)" to "com.twitter.android",
+        "Snapchat" to "com.snapchat.android",
+        "Pinterest" to "com.pinterest",
+        "LinkedIn" to "com.linkedin.android",
+        "WhatsApp" to "com.whatsapp",
+        "Telegram" to "org.telegram.messenger",
+        "Discord" to "com.discord",
+        "WeChat" to "com.tencent.mm",
+        "Clubhouse" to "com.clubhouse.app",
+        "Tumblr" to "com.tumblr",
+        "Viber" to "com.viber.voip",
+        "Messenger (Facebook Messenger)" to "com.facebook.orca"
+    )
+
 
     // Check if the usage stats permission is granted
     fun isUsageStatsPermissionGranted(): Boolean {
@@ -54,7 +76,8 @@ class UsageStatsService(private val context: Context) {
             val packageName = usageStats.packageName
             val totalTime = usageStats.totalTimeInForeground // Time in milliseconds
             val icon = iconRetriever.getAppIcon(packageName) ?: continue
-            usageApplicationList.add(UsageApplication(packageName, icon, totalTime/1000))
+            val socialMediaName = socialMediaPackageNames[packageName] ?: continue
+            usageApplicationList.add(UsageApplication(packageName, icon, socialMediaName, totalTime/1000))
         }
         return usageApplicationList
     }
