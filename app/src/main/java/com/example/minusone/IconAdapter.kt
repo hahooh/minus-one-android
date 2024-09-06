@@ -20,13 +20,30 @@ class IconAdapter (private val iconList: List<UsageApplication>) : RecyclerView.
 
     override fun onBindViewHolder(holder: IconViewHolder, position: Int) {
         val currentItem = iconList[position]
-        holder.iconImageView.setImageDrawable(currentItem.icon)
-        val text = "${currentItem.packageName} ${currentItem.usageInSeconds}"
-        holder.iconNameTextView.text = text
+        holder.iconImageView.setImageResource(currentItem.iconSrc)
+        holder.iconNameTextView.text = currentItem.appName
+        holder.appTimeSpentView.text = this.formatSeconds(currentItem.usageInSeconds)
+        holder.co2eView.text = "${currentItem.gCO2e} gCO2e"
+    }
+
+    private fun formatSeconds(seconds: Long): String {
+        val hourInSeconds = 60 * 60
+        val minInSeconds = 60
+        val hours = seconds / hourInSeconds
+        val minutes = (seconds % hourInSeconds) / minInSeconds
+        val secs = seconds % minInSeconds
+
+        // Format each component to always have at least 2 digits, with leading zeroes if needed
+        val formattedHours = String.format("%03d", hours) // Ensures 3 digits for hours
+        val formattedMinutes = String.format("%02d", minutes) // Ensures 2 digits for minutes
+        val formattedSeconds = String.format("%02d", secs) // Ensures 2 digits for seconds
+        return "${formattedHours}h ${formattedMinutes}m ${formattedSeconds}s"
     }
 
     class IconViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
         val iconImageView: ImageView = itemView.findViewById(R.id.iconImageView)
-        val iconNameTextView: TextView = itemView.findViewById(R.id.iconNameTextView)
+        val iconNameTextView: TextView = itemView.findViewById(R.id.appNameText)
+        val appTimeSpentView: TextView = itemView.findViewById(R.id.appTimeSpend)
+        val co2eView: TextView = itemView.findViewById(R.id.gCO2e)
     }
 }
