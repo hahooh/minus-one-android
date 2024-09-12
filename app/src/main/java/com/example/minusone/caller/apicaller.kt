@@ -1,7 +1,7 @@
 package com.example.minusone.caller
-
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -12,31 +12,53 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-open class Apicaller (private val apiBaseUrl: String) {
-    protected suspend fun get(path: String, queries: Map<String,String>): Pair<Int, String> {
+data class Error (
+    val message: String,
+    val status: Int,
+    val data: Map<String,String>?,
+)
+
+data class Response<T>(
+    val statusCode: Int,
+    val data: T?,
+    val errorResponse: Error?,
+)
+
+open class Apicaller(protected val apiBaseUrl: String) {
+    protected val gson = Gson()
+
+    protected suspend inline fun <reified T> get(path: String, queries: Map<String, String>): Response<T> {
         val url = URL(this.apiBaseUrl + path + "?" + this.toQueryString(queries))
         return withContext(Dispatchers.IO) {
             val connection = url.openConnection() as HttpURLConnection
             try {
                 connection.requestMethod = "GET"
                 connection.connect()
-                Pair(
-                    connection.responseCode,
+
+                val responseCode = connection.responseCode
+                val responseString = if (responseCode in 200..299) {
                     inputStreamToString(connection.inputStream)
-                )
+                } else {
+                    inputStreamToString(connection.errorStream)
+                }
+
+                if (responseCode in 200..299) {
+                    val result = gson.fromJson<T>(responseString, object : TypeToken<T>() {}.type)
+                    Response(responseCode,result,null)
+                } else {
+                    val result = gson.fromJson<Error>(responseString, Error::class.java)
+                    Response(responseCode, null, result)
+                }
             } catch (e: Exception) {
                 Log.e("API Caller GET", "Error from api caller: $e")
-                Pair(
-                    HttpURLConnection.HTTP_INTERNAL_ERROR,
-                    "Something went wrong"
-                )
+                Response(HttpURLConnection.HTTP_INTERNAL_ERROR, null,null)
             } finally {
                 connection.disconnect()
             }
         }
     }
 
-    protected suspend fun post(path: String, body: Map<String,Any>): Pair<Int, String> {
+    protected suspend inline fun <reified T> post(path: String, body: T): Response<T> {
         val url = URL(this.apiBaseUrl + path)
         return withContext(Dispatchers.IO) {
             val connection = url.openConnection() as HttpURLConnection
@@ -48,51 +70,38 @@ open class Apicaller (private val apiBaseUrl: String) {
 
                 val writer = OutputStreamWriter(connection.outputStream)
                 writer.use {
-                    it.write(mapToJsonString(body))
+                    it.write(gson.toJson(body))
                 }
 
-                val inputStream = if (connection.responseCode in 200..299) {
-                    connection.inputStream
+                val responseCode = connection.responseCode
+                val responseStream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                val responseString = inputStreamToString(responseStream)
+
+                if (responseCode in 200..299) {
+                    val result = gson.fromJson<T>(responseString, object : TypeToken<T>() {}.type)
+                    Response(responseCode,result,null)
                 } else {
-                    connection.errorStream
+                    val err = gson.fromJson<Error>(responseString,Error::class.java)
+                    Response(responseCode,null,err)
                 }
-
-                Pair(
-                    connection.responseCode,
-                    inputStreamToString(inputStream)
-                )
             } catch (e: Exception) {
                 Log.e("API Caller POST", "Error from api caller: $e")
-                Pair(
-                    HttpURLConnection.HTTP_INTERNAL_ERROR,
-                    "something went wrong"
-                )
+                Response(HttpURLConnection.HTTP_INTERNAL_ERROR,null,null)
             } finally {
                 connection.disconnect()
             }
         }
     }
 
-    private fun inputStreamToString(inputStream: InputStream): String {
+    protected fun inputStreamToString(inputStream: InputStream): String {
         val reader = BufferedReader(InputStreamReader(inputStream))
         return reader.use { it.readText() }
     }
 
-    private fun toQueryString(queries: Map<String,String>): String {
-        if (queries.isEmpty()) {
-            return ""
+    protected fun toQueryString(queries: Map<String, String>): String {
+        if (queries.isEmpty()) return ""
+        return queries.entries.joinToString("&") { (key, value) ->
+            "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
         }
-
-        var qs = ""
-        queries.forEach {
-                (key, value) ->
-            qs += "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}&"
-        }
-        return qs.removeSuffix("&")
-    }
-
-    private fun mapToJsonString(map: Map<String,Any>): String {
-        val gson = Gson()
-        return gson.toJson(map)
     }
 }
